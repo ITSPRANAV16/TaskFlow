@@ -45,23 +45,6 @@
 - 🌙 **Dark & Light Mode Support**: Powered by Google Fonts (*Outfit & Inter*) with automatic system theme synchronization.
 
 ---
-
-## 📱 Screenshots
-
-<div align="center">
-
-| 📊 **Dashboard & Overview** | 📋 **Task List & Subtasks** | 🌙 **Dark Mode & Priority** |
-| :---: | :---: | :---: |
-| <img src="assets/icon/app_icon.png" width="240" alt="Dashboard" /> | <img src="assets/icon/app_icon.png" width="240" alt="Task List" /> | <img src="assets/icon/app_icon.png" width="240" alt="Dark Mode" /> |
-
-| 🏷️ **Categories & Search** | ⚙️ **Create & Edit Task** | 👤 **About & Auto Update** |
-| :---: | :---: | :---: |
-| <img src="assets/icon/app_icon.png" width="240" alt="Categories" /> | <img src="assets/icon/app_icon.png" width="240" alt="Edit Modal" /> | <img src="assets/icon/app_icon.png" width="240" alt="About Developer" /> |
-
-</div>
-
----
-
 ## 📥 Download & Installation
 
 | Platform | Download Link | Build Type | Status |
