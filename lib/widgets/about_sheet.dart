@@ -252,7 +252,7 @@ class AboutSheet extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.vertical(12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
                 ),
