@@ -67,8 +67,9 @@
 | Platform | Download Link | Build Type | Status |
 | :--- | :--- | :--- | :--- |
 | 📱 **Android** | [Download APK](https://github.com/ITSPRANAV16/TaskFlow/releases/latest) | `.apk` (ARM64) | ✅ Stable Release |
-| 🌐 **Web** | [Open Web App](http://localhost:8080) | HTML / JS / CanvasKit | ✅ Live |
-| 💻 **Windows** | [Download Executable](https://github.com/ITSPRANAV16/TaskFlow/releases/latest) | `.exe` / Portable | ✅ Stable Release |
+| 🍎 **iOS / Apple** | [Download IPA](https://github.com/ITSPRANAV16/TaskFlow/releases/latest) | `.ipa` / TestFlight | 🔜 Coming Soon (Next Update) |
+| 💻 **Windows** | [Download Executable](https://github.com/ITSPRANAV16/TaskFlow/releases/latest) | `.exe` / Portable | 🔜 Coming Soon (Next Update) |
+| 🌐 **Web** | [Open Web App](https://github.com/ITSPRANAV16/TaskFlow/releases/latest) | HTML / JS | 🔜 Coming Soon (Next Update) |
 
 ---
 
