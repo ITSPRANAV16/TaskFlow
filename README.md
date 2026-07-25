@@ -145,9 +145,11 @@ flutter pub get
 
 ---
 
-## 📄 License
+## 📜 License & Copyright
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Copyright © 2026 **Pranav Patil**. All Rights Reserved.
+
+This software, source code, and design assets are proprietary. Unauthorized copying, distribution, or modification without written permission is strictly prohibited. See the [LICENSE](LICENSE) file for full details.
 
 <div align="center">
   <sub>Built with ❤️ by Pranav Patil</sub>
