@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/task_provider.dart';
 import 'screens/home_screen.dart';
+import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -24,7 +25,7 @@ class TaskFlowApp extends StatelessWidget {
             themeMode: provider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
-            home: const HomeScreen(),
+            home: const SplashScreen(),
           );
         },
       ),

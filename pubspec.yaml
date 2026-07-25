@@ -46,6 +46,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.4
 
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -57,6 +58,14 @@ flutter_launcher_icons:
     image_path: "assets/icon/app_icon.png"
     background_color: "#0F172A"
     theme_color: "#6366F1"
+
+flutter_native_splash:
+  color: "#0F172A"
+  image: "assets/icon/app_icon.png"
+  android_12:
+    color: "#0F172A"
+    image: "assets/icon/app_icon.png"
+  web: true
 
 flutter:
   assets:
