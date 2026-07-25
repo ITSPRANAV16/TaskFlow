@@ -7,6 +7,7 @@ import '../widgets/add_edit_task_sheet.dart';
 import '../widgets/category_selector.dart';
 import '../widgets/stats_header.dart';
 import '../widgets/about_sheet.dart';
+import '../services/update_service.dart';
 import '../widgets/task_card.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -19,6 +20,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateService.checkForUpdates(context);
+    });
+  }
 
   @override
   void dispose() {

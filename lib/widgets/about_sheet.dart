@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/update_service.dart';
 import '../theme/app_theme.dart';
 
 class AboutSheet extends StatelessWidget {
@@ -243,6 +244,29 @@ class AboutSheet extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+
+            // Check for Updates Button
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.vertical(12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  side: BorderSide(color: isDark ? const Color(0xFF334155) : const Color(0xFFCBD5E1)),
+                ),
+                onPressed: () => UpdateService.checkForUpdates(context, showNoUpdateToast: true),
+                icon: const Icon(Icons.system_update_rounded, size: 18, color: AppTheme.primaryViolet),
+                label: Text(
+                  'Check for Updates',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? Colors.white : AppTheme.lightTextPrimary,
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 24),
 
