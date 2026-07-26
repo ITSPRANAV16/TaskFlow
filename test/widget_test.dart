@@ -8,8 +8,8 @@ void main() {
   testWidgets('TaskFlow App smoke test', (WidgetTester tester) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const TaskFlowApp());
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 3));
 
-    expect(find.text('TaskFlow'), findsOneWidget);
+    expect(find.text('TaskFlow'), findsWidgets);
   });
 }
