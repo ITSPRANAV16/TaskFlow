@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 
 class UpdateService {
-  static const String currentVersion = '1.0.0';
+  static const String currentVersion = '1.0.1';
   static const String githubRepo = 'ITSPRANAV16/TaskFlow';
   static const String apiUrl = 'https://api.github.com/repos/$githubRepo/releases/latest';
 
