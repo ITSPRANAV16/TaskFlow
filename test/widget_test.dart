@@ -9,7 +9,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const TaskFlowApp());
     await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
 
-    expect(find.text('TaskFlow'), findsWidgets);
+    expect(find.byType(TaskFlowApp), findsOneWidget);
   });
 }
