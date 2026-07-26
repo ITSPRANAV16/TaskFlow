@@ -97,8 +97,8 @@ class AboutSheet extends StatelessWidget {
                 color: AppTheme.primaryViolet.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'Version 1.0.0',
+              child: Text(
+                'Version ${UpdateService.currentVersion}',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
