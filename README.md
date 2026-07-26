@@ -45,23 +45,6 @@
 - 🌙 **Dark & Light Mode Support**: Powered by Google Fonts (*Outfit & Inter*) with automatic system theme synchronization.
 
 ---
-
-## 📱 Screenshots
-
-<div align="center">
-
-| 📊 **Dashboard & Overview** | 📋 **Task List & Subtasks** | 🌙 **Dark Mode & Priority** |
-| :---: | :---: | :---: |
-| <img src="assets/icon/app_icon.png" width="240" alt="Dashboard" /> | <img src="assets/icon/app_icon.png" width="240" alt="Task List" /> | <img src="assets/icon/app_icon.png" width="240" alt="Dark Mode" /> |
-
-| 🏷️ **Categories & Search** | ⚙️ **Create & Edit Task** | 👤 **About & Auto Update** |
-| :---: | :---: | :---: |
-| <img src="assets/icon/app_icon.png" width="240" alt="Categories" /> | <img src="assets/icon/app_icon.png" width="240" alt="Edit Modal" /> | <img src="assets/icon/app_icon.png" width="240" alt="About Developer" /> |
-
-</div>
-
----
-
 ## 📥 Download & Installation
 
 | Platform | Download Link | Build Type | Status |
@@ -72,52 +55,6 @@
 | 🌐 **Web** | [Open Web App](https://github.com/ITSPRANAV16/TaskFlow/releases/latest) | HTML / JS | 🔜 Coming Soon (Next Update) |
 
 ---
-
-## 🛠️ How to Build
-
-Follow these steps to set up and build **TaskFlow** locally on your computer:
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/ITSPRANAV16/TaskFlow.git
-cd TaskFlow
-```
-
-### 2. Install Dependencies
-```bash
-flutter pub get
-```
-
-### 3. Run the Application
-- **Chrome Web Browser**:
-  ```bash
-  flutter run -d chrome
-  ```
-- **Windows Desktop**:
-  ```bash
-  flutter run -d windows
-  ```
-- **Android Device**:
-  ```bash
-  flutter run
-  ```
-
-### 4. Build Production Binaries
-- **Android APK**:
-  ```bash
-  flutter build apk --debug --target-platform android-arm64
-  ```
-- **Windows Desktop**:
-  ```bash
-  flutter build windows
-  ```
-- **Web Production**:
-  ```bash
-  flutter build web
-  ```
-
----
-
 ## 🏗️ Tech Stack & Architecture
 
 - **UI Framework**: [Flutter SDK](https://flutter.dev) (v3.41.3)
