@@ -50,60 +50,7 @@ class TaskProvider with ChangeNotifier {
   }
 
   void _loadSeedData() {
-    final now = DateTime.now();
-    const uuid = Uuid();
-    _tasks.addAll([
-      TaskItem(
-        id: uuid.v4(),
-        title: 'Designing TaskFlow App Layout',
-        description: 'Create responsive dark & light theme UI layouts for Windows and Mobile.',
-        dueDate: now.add(const Duration(hours: 4)),
-        priority: TaskPriority.urgent,
-        category: TaskCategory.work,
-        isCompleted: false,
-        subtasks: [
-          Subtask(id: uuid.v4(), title: 'Setup Color Palette & Typography', isCompleted: true),
-          Subtask(id: uuid.v4(), title: 'Build Stats Dashboard Widgets', isCompleted: true),
-          Subtask(id: uuid.v4(), title: 'Implement Responsive Layout', isCompleted: false),
-        ],
-      ),
-      TaskItem(
-        id: uuid.v4(),
-        title: 'Morning Workout & Jogging',
-        description: 'Complete 5km morning run and core strength training.',
-        dueDate: now,
-        priority: TaskPriority.high,
-        category: TaskCategory.health,
-        isCompleted: true,
-        subtasks: [
-          Subtask(id: uuid.v4(), title: 'Stretching & Warmup', isCompleted: true),
-          Subtask(id: uuid.v4(), title: '5km Run', isCompleted: true),
-        ],
-      ),
-      TaskItem(
-        id: uuid.v4(),
-        title: 'Buy Grocery & Household Items',
-        description: 'Milk, Eggs, Fresh Vegetables, Almond Milk, and Fruits.',
-        dueDate: now.add(const Duration(days: 1)),
-        priority: TaskPriority.medium,
-        category: TaskCategory.shopping,
-        isCompleted: false,
-        subtasks: [
-          Subtask(id: uuid.v4(), title: 'Fresh Veggies & Fruits', isCompleted: false),
-          Subtask(id: uuid.v4(), title: 'Groceries & Dairy', isCompleted: false),
-        ],
-      ),
-      TaskItem(
-        id: uuid.v4(),
-        title: 'Study Flutter Architecture & State Management',
-        description: 'Review Provider pattern, performance optimizations, and Clean Code principles.',
-        dueDate: now.add(const Duration(days: 2)),
-        priority: TaskPriority.high,
-        category: TaskCategory.study,
-        isCompleted: false,
-        subtasks: [],
-      ),
-    ]);
+    _tasks.clear();
     _saveToPrefs();
   }
 
