@@ -87,7 +87,7 @@ ${stackStr.length > 1500 ? stackStr.substring(0, 1500) + '\n... (truncated)' : s
     try {
       final deviceInfo = DeviceInfoPlugin();
       if (kIsWeb) {
-        final webInfo = await deviceInfo.webkitInfo;
+        final webInfo = await deviceInfo.webBrowserInfo;
         return 'Web (${webInfo.userAgent})';
       } else if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
