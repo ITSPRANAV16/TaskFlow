@@ -146,7 +146,7 @@ class _SplashScreenState extends State<SplashScreen>
                             colors: [Color(0xFF818CF8), Color(0xFF2DD4BF)],
                           ).createShader(bounds),
                           child: const Text(
-                            'TaskFlow',
+                            'SpendMate',
                             style: TextStyle(
                               fontSize: 34,
                               fontWeight: FontWeight.bold,

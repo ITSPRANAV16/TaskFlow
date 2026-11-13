@@ -56,7 +56,7 @@ class ExpenseDashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Text('Expense Tracker'),
+            const Text('SpendMate'),
           ],
         ),
         actions: [

@@ -32,7 +32,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify AppBar title
-    expect(find.text('Expense Tracker'), findsOneWidget);
+    expect(find.text('SpendMate'), findsOneWidget);
 
     // Verify Set Budget CTA card or button
     expect(find.text('Set Monthly Budget'), findsOneWidget);

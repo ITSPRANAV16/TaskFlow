@@ -108,7 +108,7 @@ class ExpenseExportService {
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
     }
 
-    buffer.writeln('Generated via TaskFlow');
+    buffer.writeln('Generated via SpendMate');
     return buffer.toString();
   }
 
