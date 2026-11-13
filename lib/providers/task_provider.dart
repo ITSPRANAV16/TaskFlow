@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:uuid/uuid.dart';
 import '../models/task_model.dart';
 
 class TaskProvider with ChangeNotifier {
@@ -140,6 +139,11 @@ class TaskProvider with ChangeNotifier {
   int get pendingCount => _tasks.where((t) => !t.isCompleted).length;
   int get urgentCount => _tasks.where((t) => (t.priority == TaskPriority.urgent || t.priority == TaskPriority.high) && !t.isCompleted).length;
 
+  double get overallCompletionRate {
+    if (_tasks.isEmpty) return 0.0;
+    return completedCount / _tasks.length;
+  }
+
   double get todayCompletionRate {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -148,9 +152,53 @@ class TaskProvider with ChangeNotifier {
       return taskDate.isAtSameMomentAs(today);
     }).toList();
 
-    if (todayTasks.isEmpty) return 0.0;
+    if (todayTasks.isEmpty) return overallCompletionRate;
     final completed = todayTasks.where((t) => t.isCompleted).length;
     return completed / todayTasks.length;
+  }
+
+  // Active Context-Aware Completion Rate (updates dynamically for current category/tab)
+  double get activeCompletionRate {
+    if (_tasks.isEmpty) return 0.0;
+    final contextTasks = _currentContextTasks;
+    if (contextTasks.isEmpty) return 0.0;
+    final completed = contextTasks.where((t) => t.isCompleted).length;
+    return completed / contextTasks.length;
+  }
+
+  int get activeTotalCount => _currentContextTasks.length;
+  int get activeCompletedCount => _currentContextTasks.where((t) => t.isCompleted).length;
+
+  List<TaskItem> get _currentContextTasks {
+    if (_selectedCategory != TaskCategory.all) {
+      return _tasks.where((t) => t.category == _selectedCategory).toList();
+    }
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    switch (_selectedFilterTab) {
+      case 'today':
+        final todayTasks = _tasks.where((t) {
+          final taskDate = DateTime(t.dueDate.year, t.dueDate.month, t.dueDate.day);
+          return taskDate.isAtSameMomentAs(today);
+        }).toList();
+        return todayTasks.isNotEmpty ? todayTasks : _tasks;
+      case 'upcoming':
+        final upcomingTasks = _tasks.where((t) {
+          final taskDate = DateTime(t.dueDate.year, t.dueDate.month, t.dueDate.day);
+          return taskDate.isAfter(today);
+        }).toList();
+        return upcomingTasks.isNotEmpty ? upcomingTasks : _tasks;
+      case 'urgent':
+        final urgentTasks = _tasks.where((t) => t.priority == TaskPriority.urgent || t.priority == TaskPriority.high).toList();
+        return urgentTasks.isNotEmpty ? urgentTasks : _tasks;
+      case 'completed':
+        final doneTasks = _tasks.where((t) => t.isCompleted).toList();
+        return doneTasks.isNotEmpty ? doneTasks : _tasks;
+      case 'all':
+      default:
+        return _tasks;
+    }
   }
 
   // CRUD Operations

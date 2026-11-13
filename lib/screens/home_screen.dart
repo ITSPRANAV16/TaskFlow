@@ -9,6 +9,7 @@ import '../widgets/stats_header.dart';
 import '../widgets/about_sheet.dart';
 import '../services/update_service.dart';
 import '../widgets/task_card.dart';
+import 'expense_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -97,6 +98,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   _isSearching = true;
                 }
               });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_balance_wallet_rounded),
+            tooltip: 'Expense Tracker',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const ExpenseDashboardScreen(),
+                ),
+              );
             },
           ),
           IconButton(

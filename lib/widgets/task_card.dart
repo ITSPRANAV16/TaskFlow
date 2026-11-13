@@ -72,8 +72,8 @@ class TaskCard extends StatelessWidget {
                 : [
                     BoxShadow(
                       color: isDark
-                          ? Colors.black.withOpacity(0.2)
-                          : Colors.grey.withOpacity(0.08),
+                          ? Colors.black.withValues(alpha: 0.2)
+                          : Colors.grey.withValues(alpha: 0.08),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -124,9 +124,9 @@ class TaskCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: priorityColor.withOpacity(0.15),
+                      color: priorityColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: priorityColor.withOpacity(0.4), width: 1),
+                      border: Border.all(color: priorityColor.withValues(alpha: 0.4), width: 1),
                     ),
                     child: Text(
                       task.priority.label,
@@ -170,7 +170,7 @@ class TaskCard extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: categoryColor.withOpacity(0.12),
+                        color: categoryColor.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
@@ -224,7 +224,7 @@ class TaskCard extends StatelessWidget {
                       ],
                     ),
 
-                    // Subtask Count Badge
+                    // Subtask Count Badge & Progress Bar
                     if (task.subtasks.isNotEmpty) ...[
                       Row(
                         mainAxisSize: MainAxisSize.min,
@@ -241,6 +241,25 @@ class TaskCard extends StatelessWidget {
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                               color: isDark ? AppTheme.darkTextSecondary : AppTheme.lightTextSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          SizedBox(
+                            width: 36,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: LinearProgressIndicator(
+                                value: task.completionProgress,
+                                minHeight: 4,
+                                backgroundColor: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFE2E8F0),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  task.completionProgress == 1.0
+                                      ? AppTheme.accentEmerald
+                                      : AppTheme.primaryViolet,
+                                ),
+                              ),
                             ),
                           ),
                         ],

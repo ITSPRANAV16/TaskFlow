@@ -61,5 +61,41 @@ void main() {
       final healthTasks = provider.filteredTasks;
       expect(healthTasks.any((t) => t.id == 'custom-id'), isTrue);
     });
+
+    test('Completion rates update accurately when tasks are completed', () async {
+      final provider = TaskProvider();
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      final task1 = TaskItem(
+        id: 'task-1',
+        title: 'Task 1',
+        dueDate: DateTime.now().add(const Duration(days: 1)),
+        isCompleted: false,
+      );
+      final task2 = TaskItem(
+        id: 'task-2',
+        title: 'Task 2',
+        dueDate: DateTime.now().add(const Duration(days: 2)),
+        isCompleted: false,
+      );
+
+      provider.addTask(task1);
+      provider.addTask(task2);
+
+      expect(provider.overallCompletionRate, equals(0.0));
+      expect(provider.activeCompletionRate, equals(0.0));
+
+      // Toggle first task to completed
+      provider.toggleTaskCompletion('task-1');
+      expect(provider.overallCompletionRate, equals(0.5));
+      expect(provider.activeCompletionRate, equals(0.5));
+      expect(provider.activeCompletedCount, equals(1));
+      expect(provider.activeTotalCount, equals(2));
+
+      // Toggle second task to completed
+      provider.toggleTaskCompletion('task-2');
+      expect(provider.overallCompletionRate, equals(1.0));
+      expect(provider.activeCompletionRate, equals(1.0));
+    });
   });
 }

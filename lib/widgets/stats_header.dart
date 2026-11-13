@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/task_model.dart';
 import '../providers/task_provider.dart';
 import '../theme/app_theme.dart';
 
@@ -10,7 +11,22 @@ class StatsHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<TaskProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final progress = provider.todayCompletionRate;
+    final progress = provider.activeCompletionRate;
+    final activeTotal = provider.activeTotalCount;
+    final activeCompleted = provider.activeCompletedCount;
+
+    String progressTitle = "Overall Progress";
+    if (provider.selectedCategory != TaskCategory.all) {
+      progressTitle = "${provider.selectedCategory.label} Tasks";
+    } else if (provider.selectedFilterTab == 'today') {
+      progressTitle = "Today's Progress";
+    } else if (provider.selectedFilterTab == 'urgent') {
+      progressTitle = "Urgent Tasks";
+    } else if (provider.selectedFilterTab == 'upcoming') {
+      progressTitle = "Upcoming Tasks";
+    } else if (provider.selectedFilterTab == 'completed') {
+      progressTitle = "Completed Tasks";
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -30,7 +46,7 @@ class StatsHeader extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryViolet.withOpacity(0.3),
+                color: AppTheme.primaryViolet.withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -46,10 +62,10 @@ class StatsHeader extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Today's Progress",
+                        Text(
+                          progressTitle,
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -67,6 +83,17 @@ class StatsHeader extends StatelessWidget {
                             ),
                           ),
                         ),
+                        const SizedBox(height: 2),
+                        Text(
+                          activeTotal == 0
+                              ? 'No tasks yet'
+                              : '$activeCompleted of $activeTotal tasks completed',
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -74,7 +101,7 @@ class StatsHeader extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -88,11 +115,18 @@ class StatsHeader extends StatelessWidget {
               const SizedBox(height: 16),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 8,
-                  backgroundColor: Colors.white.withOpacity(0.25),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                child: TweenAnimationBuilder<double>(
+                  duration: const Duration(milliseconds: 350),
+                  curve: Curves.easeOutCubic,
+                  tween: Tween<double>(begin: 0.0, end: progress.clamp(0.0, 1.0)),
+                  builder: (context, animatedValue, _) {
+                    return LinearProgressIndicator(
+                      value: animatedValue,
+                      minHeight: 8,
+                      backgroundColor: Colors.white.withValues(alpha: 0.25),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    );
+                  },
                 ),
               ),
             ],

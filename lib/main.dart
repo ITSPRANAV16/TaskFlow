@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/task_provider.dart';
-import 'screens/home_screen.dart';
+import 'providers/expense_provider.dart';
 import 'screens/splash_screen.dart';
 import 'theme/app_theme.dart';
 
@@ -39,8 +39,11 @@ class TaskFlowApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => TaskProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => ExpenseProvider()),
+      ],
       child: Consumer<TaskProvider>(
         builder: (context, provider, child) {
           return MaterialApp(
