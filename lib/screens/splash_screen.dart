@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'home_screen.dart';
+import 'expense_dashboard_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -40,7 +40,7 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const HomeScreen(),
+                const ExpenseDashboardScreen(),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(
@@ -159,7 +159,7 @@ class _SplashScreenState extends State<SplashScreen>
 
                         // Subtitle
                         Text(
-                          'Smart Task Management',
+                          'Hostel Expense & Savings Tracker',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,

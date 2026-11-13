@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../models/expense_model.dart';
 import '../providers/expense_provider.dart';
+import '../providers/task_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/add_edit_expense_sheet.dart';
 import '../widgets/expense_category_chart.dart';
@@ -34,10 +35,12 @@ class ExpenseDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          onPressed: () => Navigator.pop(context),
-        ),
+        leading: Navigator.canPop(context)
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back_rounded),
+                onPressed: () => Navigator.pop(context),
+              )
+            : null,
         title: Row(
           children: [
             Container(
@@ -57,6 +60,15 @@ class ExpenseDashboardScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          IconButton(
+            icon: Icon(
+              context.watch<TaskProvider>().isDarkMode
+                  ? Icons.light_mode_rounded
+                  : Icons.dark_mode_rounded,
+            ),
+            tooltip: 'Toggle Theme',
+            onPressed: () => context.read<TaskProvider>().toggleThemeMode(),
+          ),
           IconButton(
             icon: const Icon(Icons.file_download_outlined),
             tooltip: 'Export Report',

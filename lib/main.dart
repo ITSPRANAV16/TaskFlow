@@ -47,7 +47,7 @@ class TaskFlowApp extends StatelessWidget {
       child: Consumer<TaskProvider>(
         builder: (context, provider, child) {
           return MaterialApp(
-            title: 'TaskFlow - Modern Task Manager',
+            title: 'HostelFlow - Expense Tracker',
             debugShowCheckedModeBanner: false,
             themeMode: provider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
             theme: AppTheme.lightTheme,
