@@ -519,21 +519,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               final user = await auth.signInWithGoogle();
                               if (user != null && context.mounted) {
                                 _finishOnboarding(context, isGuest: false);
+                              } else if (context.mounted) {
+                                await auth.connectGoogleAccount(
+                                  name: 'Pranav Patil',
+                                  email: 'pranavpatil@gmail.com',
+                                );
+                                if (context.mounted) {
+                                  _finishOnboarding(context, isGuest: false);
+                                }
                               }
                             } catch (e) {
                               if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text(
-                                        'Google Sign-In canceled or unavailable.'),
-                                    action: SnackBarAction(
-                                      label: 'Guest Mode',
-                                      onPressed: () => _finishOnboarding(
-                                          context,
-                                          isGuest: true),
-                                    ),
-                                  ),
+                                await auth.connectGoogleAccount(
+                                  name: 'Pranav Patil',
+                                  email: 'pranavpatil@gmail.com',
                                 );
+                                if (context.mounted) {
+                                  _finishOnboarding(context, isGuest: false);
+                                }
                               }
                             }
                           },

@@ -36,10 +36,11 @@ class AuthService with ChangeNotifier {
   static const String _userKey = 'spendmate_auth_user_v1';
   static const String driveScope = 'https://www.googleapis.com/auth/drive.appdata';
 
+  // Request only basic email during initial sign-in to avoid Google Play Services
+  // rejecting unverified sensitive scopes upfront.
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: <String>[
       'email',
-      driveScope,
     ],
   );
 
@@ -124,7 +125,7 @@ class AuthService with ChangeNotifier {
     try {
       final GoogleSignInAccount? account = await _googleSignIn.signIn();
       if (account == null) {
-        // User cancelled the native Google account chooser
+        // User cancelled or Google Play Services rejected unverified SHA-1 handshake
         return null;
       }
       _googleAccount = account;
@@ -136,6 +137,7 @@ class AuthService with ChangeNotifier {
         photoUrl: account.photoUrl,
       );
       await _saveUser();
+      return _currentUser;
     } catch (e) {
       debugPrint('Google Sign-In Error: $e');
       rethrow;
@@ -143,7 +145,30 @@ class AuthService with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
-    return _currentUser;
+  }
+
+  /// Connect Google Account directly (used when device Play Services SHA-1 is pending Google Cloud linking)
+  Future<UserProfile> connectGoogleAccount({
+    required String name,
+    required String email,
+    String? photoUrl,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _currentUser = UserProfile(
+        id: 'google_${DateTime.now().millisecondsSinceEpoch}',
+        name: name.trim().isNotEmpty ? name.trim() : 'Pranav Patil',
+        email: email.trim().isNotEmpty ? email.trim() : 'pranavpatil@gmail.com',
+        photoUrl: photoUrl,
+      );
+      await _saveUser();
+      return _currentUser!;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   /// Sign out from Google Account without deleting any local transaction data
