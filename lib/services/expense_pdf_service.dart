@@ -172,6 +172,20 @@ class ExpensePdfService {
                 cellAlignment: pw.Alignment.centerLeft,
                 cellPadding: const pw.EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               ),
+            pw.SizedBox(height: 16),
+            pw.Divider(thickness: 0.5, color: PdfColors.grey400),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('SpendMate • Personal & Hostel Finance Statement',
+                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+                pw.Text('Developed by Pranav Patil',
+                    style: pw.TextStyle(
+                        fontSize: 8,
+                        fontWeight: pw.FontWeight.bold,
+                        color: primaryColor)),
+              ],
+            ),
           ];
         },
       ),

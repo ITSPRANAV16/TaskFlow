@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/expense_model.dart';
 
 /// Manages local scheduled reminders and instant action notifications for SpendMate.
+/// Supports dynamic localization (English by default, Marathi when selected).
 class NotificationService {
   static NotificationService? _instance;
   factory NotificationService() => _instance ??= NotificationService._internal();
@@ -24,6 +26,16 @@ class NotificationService {
   static const int dailyReminderNotificationId = 1001;
   static const int actionAlertNotificationId = 2001;
   static const int budgetWarningNotificationId = 3001;
+
+  /// Check whether the user preferred Marathi
+  Future<bool> _isMarathiPreferred() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('spendmate_language_v1') == 'mr';
+    } catch (_) {
+      return false;
+    }
+  }
 
   /// Initialize notification plugin, timezone data, and channels.
   Future<void> initialize() async {
@@ -86,6 +98,7 @@ class NotificationService {
     if (!_isInitialized) await initialize();
 
     try {
+      final isMarathi = await _isMarathiPreferred();
       final now = tz.TZDateTime.now(tz.local);
       var scheduledDate = tz.TZDateTime(
         tz.local,
@@ -116,17 +129,24 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       );
 
+      final title = isMarathi
+          ? 'SpendMate 🔔 दैनिक स्मरणपत्र'
+          : 'SpendMate 🔔 Daily Reminder';
+      final body = isMarathi
+          ? 'आजचे खर्च नोंदवले का? बजेट नियंत्रणात ठेवण्यासाठी SpendMate अपडेट करा!'
+          : "Did you log today's expenses? Keep your budget on track with SpendMate!";
+
       await _notificationsPlugin.zonedSchedule(
         id: dailyReminderNotificationId,
-        title: 'SpendMate 🔔 दैनिक स्मरणपत्र',
-        body: 'आजचे खर्च नोंदवले का? बजेट नियंत्रणात ठेवण्यासाठी SpendMate अपडेट करा!',
+        title: title,
+        body: body,
         scheduledDate: scheduledDate,
         notificationDetails: platformDetails,
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
       );
 
-      debugPrint('Daily reminder scheduled for $hour:$minute');
+      debugPrint('Daily reminder scheduled for $hour:$minute (Marathi: $isMarathi)');
     } catch (e) {
       debugPrint('Failed to schedule daily reminder: $e');
     }
@@ -150,6 +170,7 @@ class NotificationService {
     if (!_isInitialized) await initialize();
 
     try {
+      final isMarathi = await _isMarathiPreferred();
       final String formattedAmount = '₹${expense.amount.toStringAsFixed(0)}';
       final String categoryName = expense.category.label;
 
@@ -170,23 +191,43 @@ class NotificationService {
         iOS: DarwinNotificationDetails(),
       );
 
+      final title = isMarathi
+          ? 'खर्च नोंदवला गेला 💰 $formattedAmount'
+          : 'Expense Logged 💰 $formattedAmount';
+      final body = isMarathi
+          ? '${expense.title} ($categoryName) यशस्वीरित्या SpendMate मध्ये जोडला गेला.'
+          : '${expense.title} ($categoryName) added to SpendMate.';
+
       // 1. Transaction Alert
       await _notificationsPlugin.show(
         id: actionAlertNotificationId,
-        title: 'खर्च नोंदवला गेला 💰 $formattedAmount',
-        body: '${expense.title} ($categoryName) यशस्वीरित्या SpendMate मध्ये जोडला गेला.',
+        title: title,
+        body: body,
         notificationDetails: platformDetails,
       );
 
       // 2. Budget Alert if >= 80% or 100%
       if (budgetUsagePercent >= 0.8) {
         final percentText = (budgetUsagePercent * 100).toInt();
-        final alertTitle = isOverBudget
-            ? '⚠️ बजेट मर्यादा ओलांडली!'
-            : '⚠️ बजेट इशारा ($percentText%)';
-        final alertBody = isOverBudget
-            ? 'आपण या महिन्याचे निश्चित बजेट ओलांडले आहे! खर्चावर नियंत्रण ठेवा.'
-            : 'आपण मासिक बजेटच्या $percentText% रक्कम खर्च केली आहे.';
+
+        final String alertTitle;
+        final String alertBody;
+
+        if (isMarathi) {
+          alertTitle = isOverBudget
+              ? '⚠️ बजेट मर्यादा ओलांडली!'
+              : '⚠️ बजेट इशारा ($percentText%)';
+          alertBody = isOverBudget
+              ? 'आपण या महिन्याचे निश्चित बजेट ओलांडले आहे! खर्चावर नियंत्रण ठेवा.'
+              : 'आपण मासिक बजेटच्या $percentText% रक्कम खर्च केली आहे.';
+        } else {
+          alertTitle = isOverBudget
+              ? '⚠️ Budget Exceeded!'
+              : '⚠️ Budget Alert ($percentText%)';
+          alertBody = isOverBudget
+              ? 'You have exceeded your monthly budget! Keep spending in check.'
+              : 'You have used $percentText% of your monthly budget.';
+        }
 
         await _notificationsPlugin.show(
           id: budgetWarningNotificationId,
@@ -205,6 +246,7 @@ class NotificationService {
     if (!_isInitialized) await initialize();
 
     try {
+      final isMarathi = await _isMarathiPreferred();
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
         _alertsChannelId,
@@ -215,10 +257,17 @@ class NotificationService {
         icon: '@mipmap/launcher_icon',
       );
 
+      final title = isMarathi
+          ? 'हिशोब पूर्ण झाला! 🤝 ₹${amount.toStringAsFixed(0)}'
+          : 'Settlement Recorded 🤝 ₹${amount.toStringAsFixed(0)}';
+      final body = isMarathi
+          ? '$roommateName सोबतचा हिशोब यशस्वीरित्या सेटल करण्यात आला आहे.'
+          : 'Settlement with $roommateName recorded successfully.';
+
       await _notificationsPlugin.show(
         id: actionAlertNotificationId + 1,
-        title: 'हिशोब पूर्ण झाला! ✅ ₹${amount.toStringAsFixed(0)}',
-        body: '$roommateName सोबतचा हिशोब यशस्वीरित्या सेटल करण्यात आला आहे.',
+        title: title,
+        body: body,
         notificationDetails: const NotificationDetails(
           android: androidDetails,
           iOS: DarwinNotificationDetails(),

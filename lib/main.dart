@@ -9,6 +9,7 @@ import 'screens/splash_screen.dart';
 import 'services/auth_service.dart';
 import 'services/cloud_sync_service.dart';
 import 'services/crash_report_service.dart';
+import 'services/google_drive_service.dart';
 import 'services/notification_service.dart';
 import 'services/security_service.dart';
 import 'theme/app_theme.dart';
@@ -57,6 +58,7 @@ class SpendMateApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => SecurityService()),
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => GoogleDriveService()),
         ChangeNotifierProvider(create: (_) => CloudSyncService()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
         ChangeNotifierProvider(create: (_) => ExpenseProvider()),

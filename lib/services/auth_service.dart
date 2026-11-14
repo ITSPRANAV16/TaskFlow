@@ -31,15 +31,18 @@ class UserProfile {
       );
 }
 
-/// Manages Google Sign-In and User Authentication Profile for SpendMate.
+/// Manages native Google Sign-In and Google Drive authorization tokens for SpendMate.
 class AuthService with ChangeNotifier {
   static const String _userKey = 'spendmate_auth_user_v1';
+  static const String driveScope = 'https://www.googleapis.com/auth/drive.appdata';
 
   UserProfile? _currentUser;
+  GoogleSignInAccount? _googleAccount;
   bool _isLoading = false;
   bool _isGoogleInitialized = false;
 
   UserProfile? get currentUser => _currentUser;
+  GoogleSignInAccount? get googleAccount => _googleAccount;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
 
@@ -59,15 +62,15 @@ class AuthService with ChangeNotifier {
       }
     }
 
-    // Initialize GoogleSignIn 7.x
     try {
       await GoogleSignIn.instance.initialize();
       _isGoogleInitialized = true;
 
-      // Try restoring existing sign-in
+      // Try lightweight re-authentication
       final account =
           await GoogleSignIn.instance.attemptLightweightAuthentication();
       if (account != null) {
+        _googleAccount = account;
         _currentUser = UserProfile(
           id: account.id,
           name: account.displayName ?? 'Google User',
@@ -91,7 +94,31 @@ class AuthService with ChangeNotifier {
     }
   }
 
-  /// Sign in with Google Account
+  /// Request authorization headers with Google Drive scope.
+  Future<Map<String, String>?> getDriveAuthHeaders({bool promptIfNecessary = true}) async {
+    if (_googleAccount == null) {
+      try {
+        _googleAccount =
+            await GoogleSignIn.instance.attemptLightweightAuthentication();
+      } catch (e) {
+        debugPrint('Failed to get cached account: $e');
+      }
+    }
+
+    if (_googleAccount == null) return null;
+
+    try {
+      return await _googleAccount!.authorizationClient.authorizationHeaders(
+        [driveScope],
+        promptIfNecessary: promptIfNecessary,
+      );
+    } catch (e) {
+      debugPrint('Failed to get Drive authorization headers: $e');
+      return null;
+    }
+  }
+
+  /// Native Google Account Chooser & Sign-in
   Future<UserProfile?> signInWithGoogle() async {
     _isLoading = true;
     notifyListeners();
@@ -104,6 +131,8 @@ class AuthService with ChangeNotifier {
 
       final GoogleSignInAccount account =
           await GoogleSignIn.instance.authenticate();
+      _googleAccount = account;
+
       _currentUser = UserProfile(
         id: account.id,
         name: account.displayName ?? 'Google User',
@@ -121,22 +150,6 @@ class AuthService with ChangeNotifier {
     return _currentUser;
   }
 
-  /// Demo / Local Google Account Sign-In (for quick testing or offline setup)
-  Future<UserProfile> signInWithCustomAccount({
-    required String name,
-    required String email,
-  }) async {
-    _currentUser = UserProfile(
-      id: 'local_${email.hashCode}',
-      name: name,
-      email: email,
-      photoUrl: null,
-    );
-    await _saveUser();
-    notifyListeners();
-    return _currentUser!;
-  }
-
   /// Sign out from Google Account without deleting any local transaction data
   Future<void> signOut() async {
     try {
@@ -145,6 +158,7 @@ class AuthService with ChangeNotifier {
       debugPrint('Sign-out error: $e');
     }
     _currentUser = null;
+    _googleAccount = null;
     await _saveUser();
     notifyListeners();
   }

@@ -520,9 +520,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               if (user != null && context.mounted) {
                                 _finishOnboarding(context, isGuest: false);
                               }
-                            } catch (_) {
-                              // If Google Play Services is missing or dev credentials unconfigured
-                              _showAccountFallbackDialog(context);
+                            } catch (e) {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: const Text(
+                                        'Google Sign-In canceled or unavailable.'),
+                                    action: SnackBarAction(
+                                      label: 'Guest Mode',
+                                      onPressed: () => _finishOnboarding(
+                                          context,
+                                          isGuest: true),
+                                    ),
+                                  ),
+                                );
+                              }
                             }
                           },
                     icon: auth.isLoading
@@ -613,67 +625,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  void _showAccountFallbackDialog(BuildContext context) {
-    final nameCtrl = TextEditingController();
-    final emailCtrl = TextEditingController();
-    final auth = context.read<AuthService>();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Device Google Account'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Enter your Google account email to link your profile:',
-              style: TextStyle(fontSize: 13),
+          const SizedBox(height: 24),
+          const Center(
+            child: Text(
+              'Developed by Pranav Patil',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Display Name',
-                hintText: 'e.g. Pranav',
-              ),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: emailCtrl,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Google Email',
-                hintText: 'user@gmail.com',
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (emailCtrl.text.trim().isNotEmpty) {
-                Navigator.pop(ctx);
-                await auth.signInWithCustomAccount(
-                  name: nameCtrl.text.trim().isEmpty
-                      ? 'Google User'
-                      : nameCtrl.text.trim(),
-                  email: emailCtrl.text.trim(),
-                );
-                if (context.mounted) {
-                  _finishOnboarding(context, isGuest: false);
-                }
-              }
-            },
-            child: const Text('Link Account'),
           ),
         ],
       ),
