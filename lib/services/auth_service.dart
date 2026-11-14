@@ -36,10 +36,16 @@ class AuthService with ChangeNotifier {
   static const String _userKey = 'spendmate_auth_user_v1';
   static const String driveScope = 'https://www.googleapis.com/auth/drive.appdata';
 
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: <String>[
+      'email',
+      driveScope,
+    ],
+  );
+
   UserProfile? _currentUser;
   GoogleSignInAccount? _googleAccount;
   bool _isLoading = false;
-  bool _isGoogleInitialized = false;
 
   UserProfile? get currentUser => _currentUser;
   GoogleSignInAccount? get googleAccount => _googleAccount;
@@ -63,12 +69,7 @@ class AuthService with ChangeNotifier {
     }
 
     try {
-      await GoogleSignIn.instance.initialize();
-      _isGoogleInitialized = true;
-
-      // Try lightweight re-authentication
-      final account =
-          await GoogleSignIn.instance.attemptLightweightAuthentication();
+      final account = await _googleSignIn.signInSilently();
       if (account != null) {
         _googleAccount = account;
         _currentUser = UserProfile(
@@ -81,7 +82,7 @@ class AuthService with ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Google Sign-In initialization: $e');
+      debugPrint('Google Sign-In silent init: $e');
     }
   }
 
@@ -98,8 +99,7 @@ class AuthService with ChangeNotifier {
   Future<Map<String, String>?> getDriveAuthHeaders({bool promptIfNecessary = true}) async {
     if (_googleAccount == null) {
       try {
-        _googleAccount =
-            await GoogleSignIn.instance.attemptLightweightAuthentication();
+        _googleAccount = await _googleSignIn.signInSilently();
       } catch (e) {
         debugPrint('Failed to get cached account: $e');
       }
@@ -108,10 +108,8 @@ class AuthService with ChangeNotifier {
     if (_googleAccount == null) return null;
 
     try {
-      return await _googleAccount!.authorizationClient.authorizationHeaders(
-        [driveScope],
-        promptIfNecessary: promptIfNecessary,
-      );
+      final headers = await _googleAccount!.authHeaders;
+      return headers;
     } catch (e) {
       debugPrint('Failed to get Drive authorization headers: $e');
       return null;
@@ -124,13 +122,11 @@ class AuthService with ChangeNotifier {
     notifyListeners();
 
     try {
-      if (!_isGoogleInitialized) {
-        await GoogleSignIn.instance.initialize();
-        _isGoogleInitialized = true;
+      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+      if (account == null) {
+        // User cancelled the native Google account chooser
+        return null;
       }
-
-      final GoogleSignInAccount account =
-          await GoogleSignIn.instance.authenticate();
       _googleAccount = account;
 
       _currentUser = UserProfile(
@@ -153,7 +149,7 @@ class AuthService with ChangeNotifier {
   /// Sign out from Google Account without deleting any local transaction data
   Future<void> signOut() async {
     try {
-      await GoogleSignIn.instance.signOut();
+      await _googleSignIn.signOut();
     } catch (e) {
       debugPrint('Sign-out error: $e');
     }
