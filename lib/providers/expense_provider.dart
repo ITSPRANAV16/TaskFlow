@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/expense_model.dart';
+import '../services/notification_service.dart';
 
 class ExpenseProvider with ChangeNotifier {
   static const String _storageKey = 'taskflow_expenses_v1';
@@ -280,6 +281,13 @@ class ExpenseProvider with ChangeNotifier {
     _expenses.insert(0, expense);
     _saveExpenses();
     notifyListeners();
+
+    // Trigger instant system notification
+    NotificationService().notifyExpenseAdded(
+      expense,
+      isOverBudget: isOverBudget,
+      budgetUsagePercent: budgetUsagePercent,
+    );
   }
 
   void updateExpense(Expense updatedExpense) {
@@ -301,5 +309,18 @@ class ExpenseProvider with ChangeNotifier {
     _monthlyBudget = budget;
     _saveBudget();
     notifyListeners();
+  }
+
+  /// Update expense list with merged results from cloud (Zero Data Loss)
+  void setMergedExpenses(List<Expense> mergedList) {
+    _expenses.clear();
+    _expenses.addAll(mergedList);
+    _saveExpenses();
+    notifyListeners();
+  }
+
+  /// Record a roommate settlement
+  void recordSettlement(String roommate, double amount) {
+    NotificationService().notifySettlement(roommate, amount);
   }
 }

@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
-import 'expense_dashboard_screen.dart';
+import 'security_lock_screen.dart';
+import 'spendmate_main_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -40,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const ExpenseDashboardScreen(),
+                const SecurityLockScreen(child: SpendMateMainScreen()),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(

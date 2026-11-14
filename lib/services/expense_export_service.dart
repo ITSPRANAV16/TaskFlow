@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/expense_model.dart';
 
 class ExpenseExportService {
@@ -123,6 +124,31 @@ class ExpenseExportService {
     final file = File(filePath);
     await file.writeAsString(csvContent);
     return filePath;
+  }
+
+  /// Shares roommate balance ledger via WhatsApp or default share handler.
+  static Future<void> shareRoommateBalances(Map<String, double> balances) async {
+    final buffer = StringBuffer();
+    buffer.writeln('📋 *SpendMate - रूममेट हिशोब (Roommate Splits)*');
+    buffer.writeln('--------------------------------');
+    for (final entry in balances.entries) {
+      final name = entry.key;
+      final bal = entry.value;
+      if (bal > 0) {
+        buffer.writeln('• $name: ₹${bal.toStringAsFixed(0)} (येणे बाकी / Owed to me)');
+      } else {
+        buffer.writeln('• $name: ₹${bal.abs().toStringAsFixed(0)} (देणे बाकी / I owe)');
+      }
+    }
+    buffer.writeln('--------------------------------');
+    buffer.writeln('Generated via SpendMate');
+    final text = Uri.encodeComponent(buffer.toString());
+    final uri = Uri.parse('whatsapp://send?text=$text');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      }
+    } catch (_) {}
   }
 
   static String _escapeCsv(String value) {
