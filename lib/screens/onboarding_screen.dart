@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/expense_provider.dart';
 import '../providers/locale_provider.dart';
 import '../providers/task_provider.dart';
 import '../services/auth_service.dart';
@@ -29,6 +30,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final loc = context.read<LocaleProvider>();
     await loc.setGuestMode(isGuest);
     await loc.completeOnboarding();
+
+    if (!isGuest && context.mounted) {
+      try {
+        final expProv = context.read<ExpenseProvider>();
+        final auth = context.read<AuthService>();
+        await expProv.restoreFromPersistentBackup(email: auth.currentUser?.email);
+      } catch (e) {
+        debugPrint('Error restoring backup in onboarding: $e');
+      }
+    }
 
     if (!context.mounted) return;
     Navigator.of(context).pushReplacement(

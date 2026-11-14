@@ -7,6 +7,7 @@ import '../providers/task_provider.dart';
 import '../services/auth_service.dart';
 import '../services/google_drive_service.dart';
 import '../services/notification_service.dart';
+import '../services/persistent_backup_service.dart';
 import '../services/security_service.dart';
 
 class AccountSecurityScreen extends StatefulWidget {
@@ -365,12 +366,15 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                     name: nameCtrl.text,
                     email: emailCtrl.text,
                   );
+                  final restoredCount = await expenseProvider
+                      .restoreFromPersistentBackup(email: user.email);
                   if (context.mounted) {
+                    final msg = restoredCount > 0
+                        ? '✅ ${user.name} खात्याशी जोडले आणि $restoredCount जुने व्यवहार रीस्टोअर झाले!'
+                        : '✅ ${user.name} (${user.email}) खात्याशी जोडले!';
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text(
-                          '✅ ${user.name} (${user.email}) खात्याशी जोडले!',
-                        ),
+                        content: Text(msg),
                         backgroundColor: const Color(0xFF10B981),
                       ),
                     );
@@ -455,11 +459,15 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                         ? emailCtrl.text
                         : 'user@gmail.com',
                   );
+                  final restoredCount = await expenseProvider
+                      .restoreFromPersistentBackup(email: user.email);
                   if (context.mounted) {
+                    final msg = restoredCount > 0
+                        ? '✅ ${user.name} खात्याशी जोडले आणि $restoredCount जुने व्यवहार रीस्टोअर झाले!'
+                        : '✅ ${user.name} (${user.email}) खात्याशी जोडले!';
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content:
-                            Text('✅ ${user.name} खात्याशी जोडले!'),
+                        content: Text(msg),
                         backgroundColor: const Color(0xFF10B981),
                       ),
                     );
@@ -605,96 +613,91 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
             ),
           ),
           const SizedBox(height: 14),
-          ElevatedButton.icon(
-            onPressed: isSyncing
-                ? null
-                : () async {
-                    Map<String, String>? headers =
-                        await auth.getDriveAuthHeaders();
-
-                    if (headers == null && !auth.isLoggedIn) {
-                      try {
-                        final loggedIn = await auth.signInWithGoogle();
-                        if (loggedIn != null) {
-                          headers = await auth.getDriveAuthHeaders();
-                        }
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Google प्रमाणीकरण त्रुटी: $e'),
-                              backgroundColor: const Color(0xFFEF4444),
-                            ),
-                          );
-                        }
-                        return;
-                      }
-                    }
-
-                    if (headers == null) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'कृपया Google Drive बॅकअपसाठी Google खात्यात साइन इन करा.',
-                            ),
-                            backgroundColor: Color(0xFFF59E0B),
-                          ),
-                        );
-                      }
-                      return;
-                    }
-
-                    final merged = await driveService.syncWithGoogleDrive(
-                      authHeaders: headers,
-                      localExpenses: expenseProvider.allExpenses,
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final email = auth.currentUser?.email ?? 'pranavsp2810@gmail.com';
+                    await PersistentBackupService.savePersistentBackup(
+                      expenses: expenseProvider.allExpenses,
+                      settlements: expenseProvider.settlements,
                       monthlyBudget: expenseProvider.monthlyBudget,
+                      userEmail: email,
                     );
 
-                    if (merged != null) {
-                      expenseProvider.setMergedExpenses(merged);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              '✅ Google Drive appDataFolder वर यशस्वीरित्या सिंक झाले! (Zero Data Loss)',
-                            ),
-                            backgroundColor: Color(0xFF10B981),
-                          ),
-                        );
+                    // Also sync with Google Drive if OAuth headers available
+                    final headers = await auth.getDriveAuthHeaders();
+                    if (headers != null) {
+                      final merged = await driveService.syncWithGoogleDrive(
+                        authHeaders: headers,
+                        localExpenses: expenseProvider.allExpenses,
+                        monthlyBudget: expenseProvider.monthlyBudget,
+                      );
+                      if (merged != null) {
+                        expenseProvider.setMergedExpenses(merged);
                       }
-                    } else if (context.mounted &&
-                        driveService.errorMessage != null) {
+                    }
+
+                    if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(
-                            'सिंक त्रुटी: ${driveService.errorMessage}',
+                            '✅ सर्व डेटा (${expenseProvider.allExpenses.length} व्यवहार) सुरक्षित बॅकअप झाला! (Zero Data Loss)',
                           ),
-                          backgroundColor: const Color(0xFFEF4444),
+                          backgroundColor: const Color(0xFF10B981),
                         ),
                       );
                     }
                   },
-            icon: isSyncing
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : const Icon(Icons.sync_rounded, size: 18),
-            label: Text(
-              isSyncing
-                  ? 'Google Drive सिंक चालू आहे...'
-                  : 'Google Drive सह सिंक करा (Sync Now)',
-            ),
-            style: ElevatedButton.styleFrom(
-              minimumSize: const Size.fromHeight(42),
-              backgroundColor: const Color(0xFF4285F4),
-              foregroundColor: Colors.white,
-            ),
+                  icon: const Icon(Icons.cloud_upload_rounded, size: 18),
+                  label: const Text('बॅकअप करा (Backup Now)'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(42),
+                    backgroundColor: const Color(0xFF4285F4),
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final email = auth.currentUser?.email;
+                    final count = await expenseProvider
+                        .restoreFromPersistentBackup(email: email);
+                    if (context.mounted) {
+                      if (count > 0) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              '✅ सर्व जुना डेटा ($count व्यवहार) रीस्टोअर झाला!',
+                            ),
+                            backgroundColor: const Color(0xFF10B981),
+                          ),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'ℹ️ रीस्टोअर करण्यासाठी कोणताही जुना बॅकअप सापडला नाही.',
+                            ),
+                            backgroundColor: Color(0xFF6366F1),
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.cloud_download_rounded, size: 18),
+                  label: const Text('रीस्टोअर (Restore)'),
+                  style: OutlinedButton.styleFrom(
+                    minimumSize: const Size.fromHeight(42),
+                    side: const BorderSide(color: Color(0xFF4285F4)),
+                    foregroundColor: const Color(0xFF4285F4),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

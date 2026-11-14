@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/expense_model.dart';
 import '../models/settlement.dart';
 import '../services/notification_service.dart';
+import '../services/persistent_backup_service.dart';
 
 class ExpenseProvider with ChangeNotifier {
   static const String _storageKey = 'taskflow_expenses_v1';
@@ -60,6 +61,33 @@ class ExpenseProvider with ChangeNotifier {
         debugPrint('Error loading settlements: $e');
       }
     }
+    // If local expenses are empty (e.g. fresh installation or reinstall),
+    // automatically search persistent device mirrors to restore all user transactions!
+    if (_expenses.isEmpty) {
+      try {
+        final restored =
+            await PersistentBackupService.restorePersistentBackup();
+        if (restored != null && restored.expenses.isNotEmpty) {
+          _expenses.clear();
+          _expenses.addAll(restored.expenses);
+          if (restored.settlements.isNotEmpty) {
+            _settlements.clear();
+            _settlements.addAll(restored.settlements);
+          }
+          if (restored.monthlyBudget != null && restored.monthlyBudget! > 0) {
+            _monthlyBudget = restored.monthlyBudget!;
+          }
+          await _saveExpenses();
+          await _saveSettlements();
+          await _saveBudget();
+          debugPrint(
+              'Auto-Restored ${restored.expenses.length} expenses from ${restored.source}!');
+        }
+      } catch (e) {
+        debugPrint('Error auto-restoring persistent backup: $e');
+      }
+    }
+
     _isLoading = false;
     notifyListeners();
   }
@@ -70,6 +98,13 @@ class ExpenseProvider with ChangeNotifier {
       final String encoded =
           jsonEncode(_expenses.map((e) => e.toJson()).toList());
       await prefs.setString(_storageKey, encoded);
+
+      // Auto-mirror to persistent storage so data survives uninstallation
+      PersistentBackupService.savePersistentBackup(
+        expenses: _expenses,
+        settlements: _settlements,
+        monthlyBudget: _monthlyBudget,
+      );
     } catch (e) {
       debugPrint('Error saving expenses: $e');
     }
@@ -81,6 +116,12 @@ class ExpenseProvider with ChangeNotifier {
       final String encoded =
           jsonEncode(_settlements.map((s) => s.toJson()).toList());
       await prefs.setString(_settlementsKey, encoded);
+
+      PersistentBackupService.savePersistentBackup(
+        expenses: _expenses,
+        settlements: _settlements,
+        monthlyBudget: _monthlyBudget,
+      );
     } catch (e) {
       debugPrint('Error saving settlements: $e');
     }
@@ -90,9 +131,53 @@ class ExpenseProvider with ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble(_budgetKey, _monthlyBudget);
+
+      PersistentBackupService.savePersistentBackup(
+        expenses: _expenses,
+        settlements: _settlements,
+        monthlyBudget: _monthlyBudget,
+      );
     } catch (e) {
       debugPrint('Error saving budget: $e');
     }
+  }
+
+  /// Manually triggers a restore from persistent mirrors or cloud for the user.
+  Future<int> restoreFromPersistentBackup({String? email}) async {
+    final restored =
+        await PersistentBackupService.restorePersistentBackup(filterEmail: email);
+    if (restored != null && restored.expenses.isNotEmpty) {
+      final Map<String, Expense> map = {};
+      for (final exp in _expenses) {
+        map[exp.id] = exp;
+      }
+      for (final exp in restored.expenses) {
+        if (!map.containsKey(exp.id)) {
+          map[exp.id] = exp;
+        } else {
+          final existing = map[exp.id]!;
+          if (exp.createdAt.isAfter(existing.createdAt)) {
+            map[exp.id] = exp;
+          }
+        }
+      }
+      _expenses.clear();
+      _expenses.addAll(map.values.toList()..sort((a, b) => b.date.compareTo(a.date)));
+
+      if (restored.settlements.isNotEmpty) {
+        _settlements.clear();
+        _settlements.addAll(restored.settlements);
+      }
+      if (restored.monthlyBudget != null && restored.monthlyBudget! > 0) {
+        _monthlyBudget = restored.monthlyBudget!;
+      }
+      await _saveExpenses();
+      await _saveSettlements();
+      await _saveBudget();
+      notifyListeners();
+      return _expenses.length;
+    }
+    return 0;
   }
 
   // ── Month Navigation ──
