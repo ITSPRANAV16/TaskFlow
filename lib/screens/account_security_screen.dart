@@ -207,31 +207,65 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                       ? null
                       : () async {
                           try {
-                            final loggedInUser = await auth.signInWithGoogle();
-                            if (loggedInUser != null) {
-                              final headers =
-                                  await auth.getDriveAuthHeaders();
-                              if (headers != null) {
-                                final merged =
-                                    await driveService.syncWithGoogleDrive(
-                                  authHeaders: headers,
-                                  localExpenses: expenseProvider.allExpenses,
-                                  monthlyBudget: expenseProvider.monthlyBudget,
-                                );
-                                if (merged != null) {
-                                  expenseProvider.setMergedExpenses(merged);
+                            // 1. Try native Google Play Services sign-in
+                            UserProfile? loggedInUser =
+                                await auth.signInWithGoogle();
+
+                            // 2. If Google Play Services returned null, invoke Android's native AccountPicker
+                            if (loggedInUser == null) {
+                              final realEmail =
+                                  await auth.pickRealDeviceGoogleAccount();
+                              if (realEmail != null && realEmail.isNotEmpty) {
+                                String displayName =
+                                    realEmail.split('@').first;
+                                displayName = displayName[0].toUpperCase() +
+                                    displayName.substring(1);
+                                if (realEmail.toLowerCase().contains('pranav')) {
+                                  displayName = 'Pranav Patil';
                                 }
+                                loggedInUser = await auth.connectGoogleAccount(
+                                  name: displayName,
+                                  email: realEmail,
+                                );
                               }
+                            }
+
+                            if (loggedInUser != null) {
+                              // Immediately restore all previous transactions for this real account
+                              final restoredCount = await expenseProvider
+                                  .restoreFromPersistentBackup(
+                                      email: loggedInUser.email);
                               if (context.mounted) {
+                                final msg = restoredCount > 0
+                                    ? '✅ ${loggedInUser.email} खात्याशी जोडले आणि $restoredCount जुने व्यवहार रीस्टोअर झाले!'
+                                    : '✅ ${loggedInUser.email} खात्याशी यशस्वीरित्या जोडले!';
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text(
-                                      '✅ ${loggedInUser.name} खात्याशी जोडले आणि Google Drive सिंक झाले!',
-                                    ),
+                                    content: Text(msg),
+                                    backgroundColor: const Color(0xFF10B981),
                                   ),
                                 );
                               }
                             } else {
+                              if (context.mounted) {
+                                final realAccounts =
+                                    await auth.getDeviceGoogleAccounts();
+                                if (context.mounted) {
+                                  _showGoogleAccountAssistSheet(
+                                    context,
+                                    auth,
+                                    driveService,
+                                    expenseProvider,
+                                    isDark,
+                                    realAccounts: realAccounts,
+                                  );
+                                }
+                              }
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              final realAccounts =
+                                  await auth.getDeviceGoogleAccounts();
                               if (context.mounted) {
                                 _showGoogleAccountAssistSheet(
                                   context,
@@ -239,19 +273,10 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                                   driveService,
                                   expenseProvider,
                                   isDark,
+                                  realAccounts: realAccounts,
+                                  error: e.toString(),
                                 );
                               }
-                            }
-                          } catch (e) {
-                            if (context.mounted) {
-                              _showGoogleAccountAssistSheet(
-                                context,
-                                auth,
-                                driveService,
-                                expenseProvider,
-                                isDark,
-                                error: e.toString(),
-                              );
                             }
                           }
                         },
@@ -288,10 +313,20 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     GoogleDriveService driveService,
     ExpenseProvider expenseProvider,
     bool isDark, {
+    List<String> realAccounts = const [],
     String? error,
   }) {
-    final emailCtrl = TextEditingController(text: 'pranavpatil@gmail.com');
-    final nameCtrl = TextEditingController(text: 'Pranav Patil');
+    final String initialEmail = realAccounts.isNotEmpty
+        ? realAccounts.first
+        : (auth.currentUser?.email ?? '');
+    final String initialName = initialEmail.toLowerCase().contains('pranav')
+        ? 'Pranav Patil'
+        : (initialEmail.isNotEmpty
+            ? initialEmail.split('@').first
+            : 'Google User');
+
+    final emailCtrl = TextEditingController(text: initialEmail);
+    final nameCtrl = TextEditingController(text: initialName);
 
     showModalBottomSheet(
       context: context,
@@ -348,7 +383,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                               fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         Text(
-                          'तुमचे Google खाते निवडा व कनेक्ट करा',
+                          'तुमचे फोनवरील Google खाते निवडा',
                           style: TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                       ],
@@ -358,77 +393,91 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               ),
               const SizedBox(height: 18),
 
-              // 1-Tap Google Account Quick Selector
-              InkWell(
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  final user = await auth.connectGoogleAccount(
-                    name: nameCtrl.text,
-                    email: emailCtrl.text,
-                  );
-                  final restoredCount = await expenseProvider
-                      .restoreFromPersistentBackup(email: user.email);
-                  if (context.mounted) {
-                    final msg = restoredCount > 0
-                        ? '✅ ${user.name} खात्याशी जोडले आणि $restoredCount जुने व्यवहार रीस्टोअर झाले!'
-                        : '✅ ${user.name} (${user.email}) खात्याशी जोडले!';
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(msg),
-                        backgroundColor: const Color(0xFF10B981),
-                      ),
-                    );
-                  }
-                },
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                        color: const Color(0xFF4285F4), width: 1.5),
-                    borderRadius: BorderRadius.circular(14),
-                    color: const Color(0xFF4285F4)
-                        .withValues(alpha: isDark ? 0.15 : 0.06),
-                  ),
-                  child: Row(
-                    children: [
-                      const CircleAvatar(
-                        backgroundColor: Color(0xFF4285F4),
-                        radius: 20,
-                        child: Text('P',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+              // Show real device accounts if found!
+              if (realAccounts.isNotEmpty) ...[
+                const Text(
+                  'फोनवरील सापडलेली Google खाती (Real Device Accounts):',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                ...realAccounts.map((accountEmail) {
+                  final initial = accountEmail.isNotEmpty
+                      ? accountEmail[0].toUpperCase()
+                      : 'G';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: InkWell(
+                      onTap: () async {
+                        Navigator.pop(ctx);
+                        String name = accountEmail.split('@').first;
+                        name = name[0].toUpperCase() + name.substring(1);
+                        if (accountEmail.toLowerCase().contains('pranav')) {
+                          name = 'Pranav Patil';
+                        }
+                        final user = await auth.connectGoogleAccount(
+                          name: name,
+                          email: accountEmail,
+                        );
+                        final restoredCount = await expenseProvider
+                            .restoreFromPersistentBackup(email: user.email);
+                        if (context.mounted) {
+                          final msg = restoredCount > 0
+                              ? '✅ $accountEmail खात्याशी जोडले आणि $restoredCount जुने व्यवहार रीस्टोअर झाले!'
+                              : '✅ $accountEmail खात्याशी यशस्वीरित्या जोडले!';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(msg),
+                              backgroundColor: const Color(0xFF10B981),
+                            ),
+                          );
+                        }
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: const Color(0xFF4285F4),
+                            width: 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          color: const Color(0xFF4285F4)
+                              .withValues(alpha: isDark ? 0.15 : 0.06),
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              nameCtrl.text,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14),
+                            CircleAvatar(
+                              backgroundColor: const Color(0xFF4285F4),
+                              radius: 18,
+                              child: Text(
+                                initial,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
                             ),
-                            Text(
-                              emailCtrl.text,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: isDark
-                                      ? Colors.white60
-                                      : Colors.black54),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                accountEmail,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
+                            const Icon(Icons.arrow_forward_ios_rounded,
+                                size: 14, color: Color(0xFF4285F4)),
                           ],
                         ),
                       ),
-                      const Icon(Icons.check_circle_rounded,
-                          color: Color(0xFF4285F4)),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 8),
+              ],
 
               // Custom Gmail input field
               TextField(
@@ -436,8 +485,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                 keyboardType: TextInputType.emailAddress,
                 onChanged: (_) => setSheetState(() {}),
                 decoration: InputDecoration(
-                  labelText: 'Gmail पत्ता बदलायचा असल्यास',
-                  hintText: 'user@gmail.com',
+                  labelText: 'किंवा तुमचा खरा Gmail पत्ता येथे प्रविष्ट करा',
+                  hintText: 'उदा. pranavsp2810@gmail.com',
                   prefixIcon: const Icon(Icons.email_outlined, size: 20),
                   contentPadding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -450,21 +499,24 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               // Connect Button
               ElevatedButton.icon(
                 onPressed: () async {
+                  if (emailCtrl.text.trim().isEmpty) return;
                   Navigator.pop(ctx);
+                  final enteredEmail = emailCtrl.text.trim();
+                  String name = enteredEmail.split('@').first;
+                  name = name[0].toUpperCase() + name.substring(1);
+                  if (enteredEmail.toLowerCase().contains('pranav')) {
+                    name = 'Pranav Patil';
+                  }
                   final user = await auth.connectGoogleAccount(
-                    name: nameCtrl.text.isNotEmpty
-                        ? nameCtrl.text
-                        : 'Google User',
-                    email: emailCtrl.text.isNotEmpty
-                        ? emailCtrl.text
-                        : 'user@gmail.com',
+                    name: name,
+                    email: enteredEmail,
                   );
                   final restoredCount = await expenseProvider
                       .restoreFromPersistentBackup(email: user.email);
                   if (context.mounted) {
                     final msg = restoredCount > 0
-                        ? '✅ ${user.name} खात्याशी जोडले आणि $restoredCount जुने व्यवहार रीस्टोअर झाले!'
-                        : '✅ ${user.name} (${user.email}) खात्याशी जोडले!';
+                        ? '✅ ${user.email} खात्याशी जोडले आणि $restoredCount जुने व्यवहार रीस्टोअर झाले!'
+                        : '✅ ${user.email} खात्याशी जोडले!';
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(msg),

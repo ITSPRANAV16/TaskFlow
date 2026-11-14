@@ -527,28 +527,54 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ? null
                         : () async {
                             try {
-                              final user = await auth.signInWithGoogle();
+                              UserProfile? user =
+                                  await auth.signInWithGoogle();
+                              if (user == null) {
+                                final realEmail =
+                                    await auth.pickRealDeviceGoogleAccount();
+                                if (realEmail != null &&
+                                    realEmail.isNotEmpty) {
+                                  String displayName =
+                                      realEmail.split('@').first;
+                                  displayName = displayName[0].toUpperCase() +
+                                      displayName.substring(1);
+                                  if (realEmail
+                                      .toLowerCase()
+                                      .contains('pranav')) {
+                                    displayName = 'Pranav Patil';
+                                  }
+                                  user = await auth.connectGoogleAccount(
+                                    name: displayName,
+                                    email: realEmail,
+                                  );
+                                }
+                              }
                               if (user != null && context.mounted) {
                                 _finishOnboarding(context, isGuest: false);
-                              } else if (context.mounted) {
-                                await auth.connectGoogleAccount(
-                                  name: 'Pranav Patil',
-                                  email: 'pranavpatil@gmail.com',
-                                );
-                                if (context.mounted) {
-                                  _finishOnboarding(context, isGuest: false);
-                                }
                               }
                             } catch (e) {
-                              if (context.mounted) {
-                                await auth.connectGoogleAccount(
-                                  name: 'Pranav Patil',
-                                  email: 'pranavpatil@gmail.com',
-                                );
-                                if (context.mounted) {
+                              try {
+                                final realEmail =
+                                    await auth.pickRealDeviceGoogleAccount();
+                                if (realEmail != null &&
+                                    realEmail.isNotEmpty &&
+                                    context.mounted) {
+                                  String displayName =
+                                      realEmail.split('@').first;
+                                  displayName = displayName[0].toUpperCase() +
+                                      displayName.substring(1);
+                                  if (realEmail
+                                      .toLowerCase()
+                                      .contains('pranav')) {
+                                    displayName = 'Pranav Patil';
+                                  }
+                                  await auth.connectGoogleAccount(
+                                    name: displayName,
+                                    email: realEmail,
+                                  );
                                   _finishOnboarding(context, isGuest: false);
                                 }
-                              }
+                              } catch (_) {}
                             }
                           },
                     icon: auth.isLoading

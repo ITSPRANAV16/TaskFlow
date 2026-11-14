@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -169,6 +170,35 @@ class AuthService with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  static const MethodChannel _accountChannel =
+      MethodChannel('com.taskflow.task_flow/device_accounts');
+
+  /// Launches the real native Android AccountPicker and returns the exact selected Google email.
+  Future<String?> pickRealDeviceGoogleAccount() async {
+    try {
+      final String? selectedEmail =
+          await _accountChannel.invokeMethod<String>('pickRealGoogleAccount');
+      return selectedEmail;
+    } catch (e) {
+      debugPrint('Error launching native AccountPicker: $e');
+      return null;
+    }
+  }
+
+  /// Returns list of real Google accounts registered on this device.
+  Future<List<String>> getDeviceGoogleAccounts() async {
+    try {
+      final List<dynamic>? accounts =
+          await _accountChannel.invokeMethod<List<dynamic>>('getDeviceGoogleAccounts');
+      if (accounts != null) {
+        return accounts.cast<String>();
+      }
+    } catch (e) {
+      debugPrint('Error getting device accounts: $e');
+    }
+    return [];
   }
 
   /// Sign out from Google Account without deleting any local transaction data
