@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/locale_provider.dart';
 import '../theme/app_theme.dart';
+import 'onboarding_screen.dart';
 import 'security_lock_screen.dart';
 import 'spendmate_main_screen.dart';
 
@@ -38,10 +41,14 @@ class _SplashScreenState extends State<SplashScreen>
 
     Timer(const Duration(milliseconds: 2200), () {
       if (mounted) {
+        final isOnboarded = context.read<LocaleProvider>().isOnboardingDone;
+        final nextWidget = isOnboarded
+            ? const SecurityLockScreen(child: SpendMateMainScreen())
+            : const OnboardingScreen();
+
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const SecurityLockScreen(child: SpendMateMainScreen()),
+            pageBuilder: (context, animation, secondaryAnimation) => nextWidget,
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(

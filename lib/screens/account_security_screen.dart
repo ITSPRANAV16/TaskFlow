@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
+import '../providers/locale_provider.dart';
 import '../providers/task_provider.dart';
 import '../services/auth_service.dart';
 import '../services/cloud_sync_service.dart';
@@ -27,12 +28,13 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     final security = context.watch<SecurityService>();
     final expenseProvider = context.watch<ExpenseProvider>();
     final taskProvider = context.watch<TaskProvider>();
+    final loc = context.watch<LocaleProvider>();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'खाते आणि सुरक्षा (Account & Security)',
-          style: TextStyle(fontWeight: FontWeight.w700),
+        title: Text(
+          loc.tr('account_security'),
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: SingleChildScrollView(
@@ -41,23 +43,34 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // ── 1. Google Account Profile Card ──
-            _buildGoogleAccountCard(auth, syncService, expenseProvider, isDark),
+            _buildGoogleAccountCard(
+                auth, syncService, expenseProvider, loc, isDark),
             const SizedBox(height: 16),
 
             // ── 2. Cloud Sync & Zero Data Loss Vault ──
-            _buildCloudSyncCard(auth, syncService, expenseProvider, isDark),
+            _buildCloudSyncCard(
+                auth, syncService, expenseProvider, loc, isDark),
             const SizedBox(height: 16),
 
             // ── 3. App Lock & Biometrics (USE WITH SECURITY) ──
-            _buildSecurityCard(security, isDark),
+            _buildSecurityCard(security, loc, isDark),
             const SizedBox(height: 16),
 
             // ── 4. Notifications Preference Card ──
-            _buildNotificationCard(isDark),
+            _buildNotificationCard(loc, isDark),
             const SizedBox(height: 16),
 
-            // ── 5. App Theme & Info ──
-            _buildThemeAndInfoCard(taskProvider, isDark),
+            // ── 5. Language Selection Card ──
+            _buildLanguageCard(loc, isDark),
+            const SizedBox(height: 16),
+
+            // ── 6. App Theme & Info ──
+            _buildThemeAndInfoCard(taskProvider, loc, isDark),
+            const SizedBox(height: 16),
+
+            // ── 7. Data Safety & Cloud Guard Modal ──
+            _buildDataSafetyCard(
+                expenseProvider, syncService, auth, loc, isDark),
             const SizedBox(height: 32),
           ],
         ),
@@ -69,6 +82,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     AuthService auth,
     CloudSyncService syncService,
     ExpenseProvider expenseProvider,
+    LocaleProvider loc,
     bool isDark,
   ) {
     final user = auth.currentUser;
@@ -296,6 +310,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     AuthService auth,
     CloudSyncService syncService,
     ExpenseProvider expenseProvider,
+    LocaleProvider loc,
     bool isDark,
   ) {
     final isSynced = syncService.syncStatus == SyncStatus.synced;
@@ -401,7 +416,8 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     );
   }
 
-  Widget _buildSecurityCard(SecurityService security, bool isDark) {
+  Widget _buildSecurityCard(
+      SecurityService security, LocaleProvider loc, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -506,7 +522,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
     );
   }
 
-  Widget _buildNotificationCard(bool isDark) {
+  Widget _buildNotificationCard(LocaleProvider loc, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -524,9 +540,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
               const Icon(Icons.notifications_active_rounded,
                   color: Color(0xFFF59E0B)),
               const SizedBox(width: 8),
-              const Text(
-                'सूचना आणि स्मरणपत्र (Notifications)',
-                style: TextStyle(
+              Text(
+                loc.tr('daily_notifications'),
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
                 ),
@@ -536,9 +552,9 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('दैनिक खर्च स्मरणपत्र (Daily Reminder)'),
+            title: Text(loc.tr('daily_notifications')),
             subtitle: Text(
-              'दररोज संध्याकाळी ८:३० वाजता स्मरणपत्र येईल',
+              '8:30 PM reminder to log daily expenses',
               style: TextStyle(
                 fontSize: 12,
                 color: isDark ? Colors.white60 : Colors.black54,
@@ -557,22 +573,78 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
           const SizedBox(height: 6),
           OutlinedButton.icon(
             onPressed: () {
-              NotificationService().notifySettlement('मित्र (Friend)', 250);
+              NotificationService().notifySettlement('Friend', 250);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('🔔 टेस्ट सूचना पाठवली गेली आहे!'),
+                  content: Text('🔔 Test notification sent!'),
                 ),
               );
             },
             icon: const Icon(Icons.send_rounded, size: 16),
-            label: const Text('टेस्ट सूचना पाठवून पहा (Test Alert)'),
+            label: const Text('Test Notification Alert'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildThemeAndInfoCard(TaskProvider taskProvider, bool isDark) {
+  Widget _buildLanguageCard(LocaleProvider loc, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.translate_rounded, color: Color(0xFF6366F1)),
+              const SizedBox(width: 8),
+              Text(
+                loc.tr('language_setting'),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ChoiceChip(
+                  label: const Center(child: Text('English (Default)')),
+                  selected: !loc.isMarathi,
+                  onSelected: (selected) {
+                    if (selected) loc.setLanguage(AppLanguage.english);
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ChoiceChip(
+                  label: const Center(child: Text('मराठी')),
+                  selected: loc.isMarathi,
+                  onSelected: (selected) {
+                    if (selected) loc.setLanguage(AppLanguage.marathi);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeAndInfoCard(
+      TaskProvider taskProvider, LocaleProvider loc, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -586,7 +658,7 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
         children: [
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('डार्क मोड (Dark Theme)'),
+            title: const Text('Dark Theme'),
             value: taskProvider.isDarkMode,
             onChanged: (_) => taskProvider.toggleThemeMode(),
             secondary: Icon(
@@ -601,11 +673,11 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text(
-                'SpendMate आवृत्ती (Version)',
+                'SpendMate Version',
                 style: TextStyle(fontSize: 13),
               ),
               const Text(
-                'v1.0.5 (Advanced)',
+                'v1.1.0 (Ultra)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -613,6 +685,133 @@ class _AccountSecurityScreenState extends State<AccountSecurityScreen> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataSafetyCard(
+    ExpenseProvider expenseProvider,
+    CloudSyncService syncService,
+    AuthService auth,
+    LocaleProvider loc,
+    bool isDark,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEF4444).withValues(alpha: isDark ? 0.12 : 0.06),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.shield_outlined, color: Color(0xFFEF4444)),
+              const SizedBox(width: 8),
+              Text(
+                loc.tr('backup_guard_title'),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFFEF4444),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            loc.tr('backup_guard_desc'),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? Colors.white70 : Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 14),
+          OutlinedButton.icon(
+            onPressed: () => _showCloudGuardDialog(
+              context,
+              expenseProvider,
+              syncService,
+              auth,
+              loc,
+            ),
+            icon: const Icon(Icons.delete_forever_rounded,
+                color: Color(0xFFEF4444)),
+            label: Text(
+              loc.tr('clear_data'),
+              style: const TextStyle(color: Color(0xFFEF4444)),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Color(0xFFEF4444)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showCloudGuardDialog(
+    BuildContext context,
+    ExpenseProvider expenseProvider,
+    CloudSyncService syncService,
+    AuthService auth,
+    LocaleProvider loc,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444)),
+            const SizedBox(width: 8),
+            Text(loc.tr('backup_guard_title')),
+          ],
+        ),
+        content: Text(loc.tr('backup_guard_desc')),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(loc.tr('cancel')),
+          ),
+          OutlinedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              expenseProvider.clearAllData();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('All local data cleared.')),
+              );
+            },
+            style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFEF4444)),
+            child: Text(loc.tr('wipe_anyway')),
+          ),
+          ElevatedButton.icon(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final email =
+                  auth.currentUser?.email ?? 'backup_user@gmail.com';
+              await syncService.syncWithCloud(
+                accountEmail: email,
+                currentLocalExpenses: expenseProvider.allExpenses,
+              );
+              expenseProvider.clearAllData();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content:
+                        Text('✅ Data synced & backed up safely before clear!'),
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.cloud_upload_rounded),
+            label: Text(loc.tr('sync_and_proceed')),
           ),
         ],
       ),

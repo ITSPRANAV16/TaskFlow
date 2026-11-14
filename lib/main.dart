@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/expense_provider.dart';
+import 'providers/locale_provider.dart';
 import 'providers/task_provider.dart';
 import 'screens/splash_screen.dart';
 import 'services/auth_service.dart';
@@ -53,6 +54,7 @@ class SpendMateApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
         ChangeNotifierProvider(create: (_) => SecurityService()),
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => CloudSyncService()),

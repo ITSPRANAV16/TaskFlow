@@ -1,14 +1,18 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import '../models/expense_model.dart';
+import '../models/settlement.dart';
 import '../services/notification_service.dart';
 
 class ExpenseProvider with ChangeNotifier {
   static const String _storageKey = 'taskflow_expenses_v1';
   static const String _budgetKey = 'taskflow_monthly_budget';
+  static const String _settlementsKey = 'spendmate_settlements_v1';
 
   final List<Expense> _expenses = [];
+  final List<Settlement> _settlements = [];
   double _monthlyBudget = 0.0;
   DateTime _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
   bool _isLoading = true;
@@ -16,6 +20,7 @@ class ExpenseProvider with ChangeNotifier {
   // ── Public Getters ──
 
   List<Expense> get allExpenses => List.unmodifiable(_expenses);
+  List<Settlement> get settlements => List.unmodifiable(_settlements);
   double get monthlyBudget => _monthlyBudget;
   DateTime get selectedMonth => _selectedMonth;
   bool get isLoading => _isLoading;
@@ -42,6 +47,19 @@ class ExpenseProvider with ChangeNotifier {
         debugPrint('Error loading expenses: $e');
       }
     }
+
+    final settlementsJson = prefs.getString(_settlementsKey);
+    if (settlementsJson != null && settlementsJson.isNotEmpty) {
+      try {
+        final List<dynamic> decoded = jsonDecode(settlementsJson);
+        _settlements.clear();
+        for (var item in decoded) {
+          _settlements.add(Settlement.fromJson(item as Map<String, dynamic>));
+        }
+      } catch (e) {
+        debugPrint('Error loading settlements: $e');
+      }
+    }
     _isLoading = false;
     notifyListeners();
   }
@@ -54,6 +72,17 @@ class ExpenseProvider with ChangeNotifier {
       await prefs.setString(_storageKey, encoded);
     } catch (e) {
       debugPrint('Error saving expenses: $e');
+    }
+  }
+
+  Future<void> _saveSettlements() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String encoded =
+          jsonEncode(_settlements.map((s) => s.toJson()).toList());
+      await prefs.setString(_settlementsKey, encoded);
+    } catch (e) {
+      debugPrint('Error saving settlements: $e');
     }
   }
 
@@ -202,6 +231,13 @@ class ExpenseProvider with ChangeNotifier {
     return currentMonthExpenses.fold(0.0, (sum, e) => sum + e.myShare);
   }
 
+  List<Settlement> get currentMonthSettlements {
+    return _settlements.where((s) {
+      return s.date.year == _selectedMonth.year &&
+          s.date.month == _selectedMonth.month;
+    }).toList();
+  }
+
   /// Total money roommates owe you for shared bills you paid upfront.
   double get totalOwedToMe {
     return currentMonthExpenses.fold(0.0, (sum, e) => sum + e.amountOthersOweMe);
@@ -212,7 +248,7 @@ class ExpenseProvider with ChangeNotifier {
     return currentMonthExpenses.fold(0.0, (sum, e) => sum + e.amountIOweOthers);
   }
 
-  /// Net balance per roommate (+ means they owe you, - means you owe them).
+  /// Net balance per roommate (+ means they owe you, - means you owe them, adjusted by settlements).
   Map<String, double> get roommateBalances {
     final balances = <String, double>{};
     for (final expense in currentMonthExpenses) {
@@ -233,6 +269,21 @@ class ExpenseProvider with ChangeNotifier {
         balances[payer] = (balances[payer] ?? 0.0) - expense.sharePerPerson;
       }
     }
+
+    // Adjust by settlements recorded in the selected period
+    for (final s in currentMonthSettlements) {
+      final name = s.roommateName.trim();
+      if (!balances.containsKey(name)) {
+        balances[name] = 0.0;
+      }
+      final currentBal = balances[name] ?? 0.0;
+      if (currentBal > 0) {
+        balances[name] = (currentBal - s.amount);
+      } else if (currentBal < 0) {
+        balances[name] = (currentBal + s.amount);
+      }
+    }
+
     return balances;
   }
 
@@ -319,8 +370,43 @@ class ExpenseProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Record a roommate settlement
-  void recordSettlement(String roommate, double amount) {
+  /// Record a roommate settlement with persistence
+  void recordSettlement(
+    String roommate,
+    double amount, {
+    String paymentMethod = 'UPI',
+    String note = '',
+  }) {
+    final settlement = Settlement(
+      id: const Uuid().v4(),
+      roommateName: roommate,
+      amount: amount,
+      date: DateTime.now(),
+      paymentMethod: paymentMethod,
+      note: note,
+    );
+    _settlements.insert(0, settlement);
+    _saveSettlements();
+    notifyListeners();
+
     NotificationService().notifySettlement(roommate, amount);
+  }
+
+  /// Undo or delete a settlement
+  void deleteSettlement(String settlementId) {
+    _settlements.removeWhere((s) => s.id == settlementId);
+    _saveSettlements();
+    notifyListeners();
+  }
+
+  /// Clear all expenses and settlements (Safe Wipe)
+  void clearAllData() {
+    _expenses.clear();
+    _settlements.clear();
+    _monthlyBudget = 0.0;
+    _saveExpenses();
+    _saveSettlements();
+    _saveBudget();
+    notifyListeners();
   }
 }

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/locale_provider.dart';
+import '../services/auth_service.dart';
 import 'expense_dashboard_screen.dart';
 import 'analytics_screen.dart';
 import 'roommates_screen.dart';
@@ -25,11 +28,76 @@ class _SpendMateMainScreenState extends State<SpendMateMainScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final loc = context.watch<LocaleProvider>();
+    final auth = context.watch<AuthService>();
+    final showGuestBanner = loc.isGuestMode && !auth.isLoggedIn;
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
+      body: SafeArea(
+        child: Column(
+          children: [
+            if (showGuestBanner)
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? const Color(0xFF451A03)
+                      : const Color(0xFFFEF3C7),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isDark ? Colors.amber.shade900 : Colors.amber.shade300,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.amber, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        loc.tr('guest_warning'),
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? Colors.amber.shade200 : Colors.amber.shade900,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        foregroundColor:
+                            isDark ? Colors.white : Colors.amber.shade900,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _currentIndex = 3; // Go to Security/Account
+                        });
+                      },
+                      child: Text(
+                        loc.tr('connect_google'),
+                        style: const TextStyle(
+                            fontSize: 11, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            Expanded(
+              child: IndexedStack(
+                index: _currentIndex,
+                children: _screens,
+              ),
+            ),
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
@@ -48,26 +116,26 @@ class _SpendMateMainScreenState extends State<SpendMateMainScreen> {
               _currentIndex = index;
             });
           },
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              selectedIcon: Icon(Icons.account_balance_wallet_rounded),
-              label: 'खर्च (Expenses)',
+              icon: const Icon(Icons.account_balance_wallet_outlined),
+              selectedIcon: const Icon(Icons.account_balance_wallet_rounded),
+              label: loc.tr('nav_expenses'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.pie_chart_outline_rounded),
-              selectedIcon: Icon(Icons.pie_chart_rounded),
-              label: 'विश्लेषण (Analytics)',
+              icon: const Icon(Icons.pie_chart_outline_rounded),
+              selectedIcon: const Icon(Icons.pie_chart_rounded),
+              label: loc.tr('nav_analytics'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.groups_outlined),
-              selectedIcon: Icon(Icons.groups_rounded),
-              label: 'रूममेट्स (Splits)',
+              icon: const Icon(Icons.groups_outlined),
+              selectedIcon: const Icon(Icons.groups_rounded),
+              label: loc.tr('nav_roommates'),
             ),
             NavigationDestination(
-              icon: Icon(Icons.security_outlined),
-              selectedIcon: Icon(Icons.security_rounded),
-              label: 'सुरक्षा (Security)',
+              icon: const Icon(Icons.security_outlined),
+              selectedIcon: const Icon(Icons.security_rounded),
+              label: loc.tr('nav_security'),
             ),
           ],
         ),
@@ -75,4 +143,3 @@ class _SpendMateMainScreenState extends State<SpendMateMainScreen> {
     );
   }
 }
-
